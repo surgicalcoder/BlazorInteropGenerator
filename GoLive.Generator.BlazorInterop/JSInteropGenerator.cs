@@ -119,7 +119,6 @@ namespace GoLive.Generator.BlazorInterop
 
                     if (itemType.GetGenericTypeDefinition() == typeof(Func<,,>).GetGenericTypeDefinition() && itemType.GenericTypeArguments[0] == typeof(JsValue) && itemType.GenericTypeArguments[1]  == typeof(JsValue[]) && itemType.GenericTypeArguments[2] == typeof(JsValue))
                     {
-                        // Console.WriteLine($"{ParentName}.{key} is a js function");
                         var funcItem = (Func<JsValue, JsValue[], JsValue>)value.Value;
                         
                         var itemFound = new JavascriptItem()

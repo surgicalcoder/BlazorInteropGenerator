@@ -1,72 +1,86 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>netstandard2.0</TargetFramework>
-        <LangVersion>9.0</LangVersion>
 
-        <PackageId>GoLive.Generator.BlazorInterop</PackageId>
-        <Authors>SurgicalCoder</Authors>
-        <Company>N/A</Company>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Description>Generates strongly typed methods that interop into Javascript.</Description>
-        <Copyright>Copyright 2022 - 2025 - SurgicalCoder</Copyright>
-        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PublishRepositoryUrl>true</PublishRepositoryUrl>
-        <GenerateRepositoryUrlAttribute>true</GenerateRepositoryUrlAttribute>
-        <PackOnBuild>true</PackOnBuild>
-        <PackFolder>analyzers\cs</PackFolder>
-        <IsRoslynComponent>true</IsRoslynComponent>
-        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-        <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
-        <IncludeBuildOutput>false</IncludeBuildOutput>
-        <DevelopmentDependency>true</DevelopmentDependency>
-        <PackageProjectUrl>https://github.com/surgicalcoder/BlazorInteropGenerator</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/surgicalcoder/BlazorInteropGenerator</RepositoryUrl>
-    </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
+		<PackOnBuild>true</PackOnBuild>
+		<PackFolder>analyzers\cs</PackFolder>
+		<IsRoslynComponent>true</IsRoslynComponent>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+		<CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
+		<IncludeBuildOutput>true</IncludeBuildOutput>
+		<DevelopmentDependency>true</DevelopmentDependency>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<PackageId>GoLive.Generator.BlazorInterop</PackageId>
+		<Authors>SurgicalCoder</Authors>
+		<Company>N/A</Company>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Description>Generates strongly typed methods that interop into Javascript.</Description>
+		<Copyright>Copyright 2022 - 2025 - SurgicalCoder</Copyright>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<GenerateRepositoryUrlAttribute>true</GenerateRepositoryUrlAttribute>
+		<PackOnBuild>true</PackOnBuild>
+		<PackFolder>analyzers\cs</PackFolder>
+		<IsRoslynComponent>true</IsRoslynComponent>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+		<CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
+		<IncludeBuildOutput>false</IncludeBuildOutput>
+		<DevelopmentDependency>true</DevelopmentDependency>
+		<PackageProjectUrl>https://github.com/surgicalcoder/BlazorInteropGenerator</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/surgicalcoder/BlazorInteropGenerator</RepositoryUrl>
+	</PropertyGroup>
+
     <ItemGroup>
-        <PackageReference Include="Acornima" Version="1.1.0" GeneratePathProperty="true" PrivateAssets="All" />
+        <PackageReference Include="Acornima" Version="1.1.0" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.11.0" PrivateAssets="All" />
-        <PackageReference Include="Esprima" Version="3.0.5" GeneratePathProperty="true" PrivateAssets="All" />
-        <PackageReference Include="Jint" Version="4.1.0" GeneratePathProperty="true" PrivateAssets="All" />
-        <PackageReference Include="System.Buffers" Version="4.6.0" GeneratePathProperty="true" PrivateAssets="All" />
-        <PackageReference Include="System.Numerics.Vectors" Version="4.6.0" GeneratePathProperty="true" PrivateAssets="All" />
-        <PackageReference Include="ZCS.Utf8Json" Version="1.4.5" GeneratePathProperty="true" PrivateAssets="All" />
+        <PackageReference Include="Esprima" Version="3.0.5" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
+        <PackageReference Include="Jint" Version="4.1.0" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
+        <PackageReference Include="System.Buffers" Version="4.6.0" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
+        <PackageReference Include="System.Numerics.Vectors" Version="4.6.0" GeneratePathProperty="true" PrivateAssets="All" Pack="true"  />
+        <PackageReference Include="ZCS.Utf8Json" Version="1.4.5" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
     </ItemGroup>
 
-    <PropertyGroup>
-        <GetTargetPathDependsOn>$(GetTargetPathDependsOn);GetDependencyTargetPaths</GetTargetPathDependsOn>
-    </PropertyGroup>
-    <Target Name="GetDependencyTargetPaths" AfterTargets="ResolvePackageDependenciesForBuild">
-        <ItemGroup>
-            <SourceGenPackage Include="$(PKGSystem_Buffers)\lib\netstandard2.0\System.Buffers.dll" />
-            <SourceGenPackage Include="$(PKGSystem_Numerics_Vectors)\lib\netstandard2.0\System.Numerics.Vectors.dll" />
-            <SourceGenPackage Include="$(PKGZCS_Utf8Json)\lib\netstandard2.0\Utf8Json.dll" />
-            <SourceGenPackage Include="$(PKGJint)\lib\netstandard2.0\Jint.dll" />
-            <SourceGenPackage Include="$(PKGEsprima)\lib\netstandard2.0\Esprima.dll" />
-            <SourceGenPackage Include="$(PKGAcornima)\lib\netstandard2.0\Acornima.dll" />
-            <SourceGenPackage Include="@(ResolvedCompileFileDefinitions)" />
-        </ItemGroup>
-        <ItemGroup>
-            <TargetPathWithTargetPlatformMoniker Include="@(SourceGenPackage)" IncludeRuntimeDependency="false" />
-            <None Include="@(SourceGenPackage)" PackagePath="analyzers/dotnet/cs" Visible="false" />
-        </ItemGroup>
-    </Target>
-    <ItemGroup>
-        <None Include="$(OutputPath)\$(AssemblyName).dll" PackagePath="analyzers/dotnet/cs" Visible="false" />
-        <None Include="..\README.md">
-            <Pack>True</Pack>
-            <PackagePath>\</PackagePath>
-        </None>
-    </ItemGroup>
 
-    <ItemGroup>
-        <None Include="$(PKGSystem_Buffers)\lib\netstandard2.0\System.Buffers.dll" PackagePath="analyzers/dotnet/cs" Visible="false" />
-        <None Include="$(PKGSystem_Numerics_Vectors)\lib\netstandard2.0\System.Numerics.Vectors.dll" PackagePath="analyzers/dotnet/cs" Visible="false" />
-        <None Include="$(PKGZCS_Utf8Json)\lib\netstandard2.0\Utf8Json.dll" PackagePath="analyzers/dotnet/cs" Visible="false" />
-        <None Include="$(PKGJint)\lib\netstandard2.0\Jint.dll" PackagePath="analyzers/dotnet/cs" Visible="false" />
-        <None Include="$(PKGEsprima)\lib\netstandard2.0\Esprima.dll" PackagePath="analyzers/dotnet/cs" Visible="false" />
-        <None Include="$(PKGAcornima)\lib\netstandard2.0\Acornima.dll" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    </ItemGroup>
+	<PropertyGroup>
+		<GetTargetPathDependsOn>$(GetTargetPathDependsOn);GetDependencyTargetPaths</GetTargetPathDependsOn>
+	</PropertyGroup>
+	<Target Name="GetDependencyTargetPaths" AfterTargets="ResolvePackageDependenciesForBuild">
+		<ItemGroup>
+			<TargetPathWithTargetPlatformMoniker Include="@(ResolvedCompileFileDefinitions)" IncludeRuntimeDependency="false" />
+		</ItemGroup>
+	</Target>
+	<ItemGroup>
+		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+	</ItemGroup>
+
+	<Target Name="AddPackDependencies"
+            Inputs="@(RuntimeCopyLocalItems)"
+            Outputs="%(RuntimeCopyLocalItems.NuGetPackageId)"
+            DependsOnTargets="ResolvePackageAssets"
+            BeforeTargets="GenerateNuspec"
+            AfterTargets="ResolvePackageAssets">
+		<ItemGroup>
+			<NuGetPackageId Include="@(RuntimeCopyLocalItems -> '%(NuGetPackageId)')" />
+		</ItemGroup>
+		<PropertyGroup>
+			<NuGetPackageId>@(NuGetPackageId -&gt; Distinct())</NuGetPackageId>
+		</PropertyGroup>
+		<ItemGroup>
+			<PackageReferenceDependency Include="@(PackageReference -&gt; WithMetadataValue('Identity', '$(NuGetPackageId)'))" />
+		</ItemGroup>
+		<PropertyGroup>
+			<NuGetPackagePack>@(PackageReferenceDependency -> '%(Pack)')</NuGetPackagePack>
+		</PropertyGroup>
+		<ItemGroup Condition="'$(NuGetPackagePack)' == 'true'">
+			<_PackageFiles Include="@(RuntimeCopyLocalItems)" PackagePath="analyzers/dotnet/cs/%(Filename)%(Extension)" />
+			<RuntimeCopyLocalItems Update="@(RuntimeCopyLocalItems)" CopyLocal="true" Private="true" />
+			<ResolvedFileToPublish Include="@(RuntimeCopyLocalItems)" CopyToPublishDirectory="PreserveNewest" RelativePath="%(Filename)%(Extension)" />
+		</ItemGroup>
+	</Target>
+
+
 
 </Project>

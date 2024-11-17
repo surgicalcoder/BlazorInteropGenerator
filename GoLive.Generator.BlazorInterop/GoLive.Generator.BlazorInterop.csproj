@@ -30,7 +30,8 @@
         <PackageReference Include="Jint" Version="4.1.0" GeneratePathProperty="true" PrivateAssets="All"  />
         <PackageReference Include="System.Buffers" Version="4.6.0" GeneratePathProperty="true" PrivateAssets="All"  />
         <PackageReference Include="System.Numerics.Vectors" Version="4.6.0" GeneratePathProperty="true" PrivateAssets="All"  />
-        <PackageReference Include="System.Text.Json" Version="7.0.1" GeneratePathProperty="true" PrivateAssets="all" />
+        <PackageReference Include="System.Text.Json" Version="9.0.0" GeneratePathProperty="true" PrivateAssets="all" />
+        <PackageReference Include="System.Text.Encodings.Web" Version="9.0.0" GeneratePathProperty="true" PrivateAssets="All" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -43,6 +44,7 @@
             <SourceGenPackage Include="$(PKGSystem_Text_Json)\lib\netstandard2.0\System.Text.Json.dll" />
             <SourceGenPackage Include="$(PKGJint)\lib\netstandard2.0\Jint.dll" />
             <SourceGenPackage Include="$(PKGEsprima)\lib\netstandard2.0\Esprima.dll" />
+            <SourceGenPackage Include="$(PKGSystem_Text_Encodings_Web)\lib\netstandard2.0\System.Text.Encodings.Web.dll" />
 
             <SourceGenPackage Include="@(ResolvedCompileFileDefinitions)" />
         </ItemGroup>

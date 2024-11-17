@@ -7,7 +7,7 @@ using Jint;
 using Jint.Native;
 using Jint.Native.Function;
 using Microsoft.CodeAnalysis;
-using System.Text.Json;
+using Utf8Json;
 
 namespace GoLive.Generator.BlazorInterop
 {

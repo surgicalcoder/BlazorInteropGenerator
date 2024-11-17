@@ -60,4 +60,13 @@
         </None>
     </ItemGroup>
 
+    <ItemGroup>
+        <None Include="$(PKGSystem_Buffers)\lib\netstandard2.0\System.Buffers.dll" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="$(PKGSystem_Numerics_Vectors)\lib\netstandard2.0\System.Numerics.Vectors.dll" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="$(PKGZCS_Utf8Json)\lib\netstandard2.0\Utf8Json.dll" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="$(PKGJint)\lib\netstandard2.0\Jint.dll" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="$(PKGEsprima)\lib\netstandard2.0\Esprima.dll" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="$(PKGAcornima)\lib\netstandard2.0\Acornima.dll" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    </ItemGroup>
+
 </Project>

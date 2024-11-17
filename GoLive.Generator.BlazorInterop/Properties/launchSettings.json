@@ -1,9 +1,9 @@
-﻿{
-  "$schema": "http://json.schemastore.org/launchsettings.json",
+{
   "profiles": {
     "GoLive.Generator.BlazorInterop": {
       "commandName": "DebugRoslynComponent",
-      "targetProject": "../GoLive.Generator.BlazorInterop.Playground/GoLive.Generator.BlazorInterop.Playground.csproj"
+      "targetProject": "..\\GoLive.Generator.BlazorInterop.Playground\\GoLive.Generator.BlazorInterop.Playground.csproj"
     }
-  }
+  },
+  "$schema": "http://json.schemastore.org/launchsettings.json"
 }

@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netstandard2.1</TargetFramework>
+        <TargetFramework>netstandard2.0</TargetFramework>
         <LangVersion>9.0</LangVersion>
 
         <PackageId>GoLive.Generator.BlazorInterop</PackageId>
@@ -26,53 +26,37 @@
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.11.0" PrivateAssets="All" />
-        <PackageReference Include="Esprima" Version="3.0.5" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
-        <PackageReference Include="Jint" Version="4.1.0" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
-        <PackageReference Include="System.Buffers" Version="4.6.0" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
-        <PackageReference Include="System.Numerics.Vectors" Version="4.6.0" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
-        <PackageReference Include="System.Text.Json" Version="9.0.0" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
+        <PackageReference Include="Esprima" Version="3.0.5" GeneratePathProperty="true" PrivateAssets="All"  />
+        <PackageReference Include="Jint" Version="4.1.0" GeneratePathProperty="true" PrivateAssets="All"  />
+        <PackageReference Include="System.Buffers" Version="4.6.0" GeneratePathProperty="true" PrivateAssets="All"  />
+        <PackageReference Include="System.Numerics.Vectors" Version="4.6.0" GeneratePathProperty="true" PrivateAssets="All"  />
+        <PackageReference Include="System.Text.Json" Version="7.0.1" GeneratePathProperty="true" PrivateAssets="all" />
     </ItemGroup>
+
     <PropertyGroup>
         <GetTargetPathDependsOn>$(GetTargetPathDependsOn);GetDependencyTargetPaths</GetTargetPathDependsOn>
     </PropertyGroup>
     <Target Name="GetDependencyTargetPaths" AfterTargets="ResolvePackageDependenciesForBuild">
         <ItemGroup>
-            <TargetPathWithTargetPlatformMoniker Include="$(PKGSystem_Buffers)\lib\netstandard2.0\System.Buffers.dll" IncludeRuntimeDependency="false" />
-            <TargetPathWithTargetPlatformMoniker Include="$(PKGSystem_Numerics_Vectors)\lib\netstandard2.0\System.Numerics.Vectors.dll" IncludeRuntimeDependency="false" />
-            <TargetPathWithTargetPlatformMoniker Include="$(PKGSystem_Text_Json)\lib\netstandard2.0\System.Text.Json.dll" IncludeRuntimeDependency="false" />
-            <TargetPathWithTargetPlatformMoniker Include="$(PKGJint)\lib\netstandard2.0\Jint.dll" IncludeRuntimeDependency="false" />
-            <TargetPathWithTargetPlatformMoniker Include="$(PKGEsprima)\lib\netstandard2.0\Esprima.dll" IncludeRuntimeDependency="false" />
-            
-            <TargetPathWithTargetPlatformMoniker Include="@(ResolvedCompileFileDefinitions)" IncludeRuntimeDependency="false" />
+            <SourceGenPackage Include="$(PKGSystem_Buffers)\lib\netstandard2.0\System.Buffers.dll" />
+            <SourceGenPackage Include="$(PKGSystem_Numerics_Vectors)\lib\netstandard2.0\System.Numerics.Vectors.dll" />
+            <SourceGenPackage Include="$(PKGSystem_Text_Json)\lib\netstandard2.0\System.Text.Json.dll" />
+            <SourceGenPackage Include="$(PKGJint)\lib\netstandard2.0\Jint.dll" />
+            <SourceGenPackage Include="$(PKGEsprima)\lib\netstandard2.0\Esprima.dll" />
+
+            <SourceGenPackage Include="@(ResolvedCompileFileDefinitions)" />
+        </ItemGroup>
+        <ItemGroup>
+            <TargetPathWithTargetPlatformMoniker Include="@(SourceGenPackage)" IncludeRuntimeDependency="false" />
+            <None Include="@(SourceGenPackage)"  PackagePath="analyzers/dotnet/cs" Visible="false" />
         </ItemGroup>
     </Target>
     <ItemGroup>
-        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="$(OutputPath)\$(AssemblyName).dll"  PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="..\README.md">
+            <Pack>True</Pack>
+            <PackagePath>\</PackagePath>
+        </None>
     </ItemGroup>
-    
-    <Target Name="AddPackDependencies"
-            Inputs="@(RuntimeCopyLocalItems)"
-            Outputs="%(RuntimeCopyLocalItems.NuGetPackageId)"
-            DependsOnTargets="ResolvePackageAssets"
-            BeforeTargets="GenerateNuspec"
-            AfterTargets="ResolvePackageAssets">
-        <ItemGroup>
-            <NuGetPackageId Include="@(RuntimeCopyLocalItems -> '%(NuGetPackageId)')" />
-        </ItemGroup>
-        <PropertyGroup>
-            <NuGetPackageId>@(NuGetPackageId -&gt; Distinct())</NuGetPackageId>
-        </PropertyGroup>
-        <ItemGroup>
-            <PackageReferenceDependency Include="@(PackageReference -&gt; WithMetadataValue('Identity', '$(NuGetPackageId)'))" />
-        </ItemGroup>
-        <PropertyGroup>
-            <NuGetPackagePack>@(PackageReferenceDependency -> '%(Pack)')</NuGetPackagePack>
-        </PropertyGroup>
-        <ItemGroup Condition="'$(NuGetPackagePack)' == 'true'">
-            <_PackageFiles Include="@(RuntimeCopyLocalItems)" PackagePath="analyzers/dotnet/cs/%(Filename)%(Extension)" />
-            <RuntimeCopyLocalItems Update="@(RuntimeCopyLocalItems)" CopyLocal="true" Private="true" />
-            <ResolvedFileToPublish Include="@(RuntimeCopyLocalItems)" CopyToPublishDirectory="PreserveNewest" RelativePath="%(Filename)%(Extension)" />
-        </ItemGroup>
-    </Target>
-    
+
 </Project>

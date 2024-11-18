@@ -9,180 +9,189 @@ using Jint.Native.Function;
 using Microsoft.CodeAnalysis;
 using Utf8Json;
 
-namespace GoLive.Generator.BlazorInterop
+namespace GoLive.Generator.BlazorInterop;
+
+[Generator]
+public class JSInteropGenerator : ISourceGenerator
 {
-    [Generator]
-    public class JSInteropGenerator : ISourceGenerator
+    public void Initialize(GeneratorInitializationContext context)
     {
-        public void Initialize(GeneratorInitializationContext context)
+    }
+    
+    private string SanitizeFileName(string fileName) => Path.GetInvalidFileNameChars().Aggregate(fileName, (current, c) => current.Replace(c, '_'));
+
+    public void Execute(GeneratorExecutionContext context)
+    {
+        var config = LoadConfig(context);
+
+        if (config == null)
         {
+            return;
         }
 
-        public void Execute(GeneratorExecutionContext context)
+        foreach (var settingsFile in config.Files)
         {
-            var config = LoadConfig(context);
-
-            if (config == null)
-            {
-                return;
-            }
-
-            string source = GenerateSource(config);
-
+            string source = GenerateSource(config.InvokeString, config.InvokeVoidString, settingsFile);
+            
             if (!string.IsNullOrWhiteSpace(source))
             {
-                if (string.IsNullOrWhiteSpace(config.OutputToFile))
+                if (string.IsNullOrWhiteSpace(settingsFile.Output))
                 {
-                    context.AddSource("Generated.cs", source);
+                    context.AddSource($"Generated.{SanitizeFileName(settingsFile.ClassName)}.cs", source);
                 }
                 else
                 {
-                    if (File.Exists(config.OutputToFile))
+                    if (File.Exists(settingsFile.Output))
                     {
-                        File.Delete(config.OutputToFile);
+                        File.Delete(settingsFile.Output);
                     }
 
-                    File.WriteAllText(config.OutputToFile, source);
+                    File.WriteAllText(settingsFile.Output, source);
                 }
             }
         }
+    }
 
-        private string GenerateSource(Settings config)
+    private string GenerateSource(string invokeString, string invokeVoidString, SettingsFile file)
+    {
+        var ssb = new SourceStringBuilder();
+
+        string source = System.IO.File.ReadAllText(file.Source);
+            
+        var engine = new Engine();
+        foreach (var s in file.Init)
         {
-            var ssb = new SourceStringBuilder();
-
-            string source = System.IO.File.ReadAllText(config.JavascriptFile);
-            
-            var engine = new Engine();
-            foreach (var s in config.JSInit)
-            {
-                engine.Execute(s);
-            }
-
-            engine.Execute(source);
-            
-            var ob = engine.Evaluate(config.MainJsObject).ToObject() as ExpandoObject;
-            List<JavascriptItem> items = new();
-            
-            VisitExpandoObject(ref items, config.MainJsObject,"", ob);
-            ssb.AppendLine("using System.Threading.Tasks;");
-            ssb.AppendLine("using Microsoft.JSInterop;");
-            ssb.AppendLine($"namespace {config.Namespace}");
-            ssb.AppendOpenCurlyBracketLine();
-            ssb.AppendLine($"public static class {config.ClassName}");
-            ssb.AppendOpenCurlyBracketLine();
-            
-            foreach (var item in items)
-            {
-                ssb.AppendLine($"public static string _{item.Name.Replace(".","_")} => \"{item.Name}\";");
-                
-                ssb.AppendLine($"public static async Task {item.DisplayName.Replace(".","_")}VoidAsync (this IJSRuntime JSRuntime {GetParamsObjectString(item)})");
-                ssb.AppendOpenCurlyBracketLine();
-                ssb.AppendLine(string.Format(config.InvokeVoidString, item.Name, item.Params?.Count > 0 ? string.Join(",", item.Params.Select(e=>$"@{e}")) : "null" )  );
-                ssb.AppendCloseCurlyBracketLine();
-                
-                ssb.AppendLine($"public static async Task<T> {item.DisplayName.Replace(".","_")}Async<T> (this IJSRuntime JSRuntime {GetParamsObjectString(item)})");
-                ssb.AppendOpenCurlyBracketLine();
-                ssb.AppendLine(string.Format(config.InvokeString, item.Name, string.Join(",", item.Params?.Count > 0 ? string.Join(",", item.Params.Select(e=>$"@{e}")) : "null") ));
-                ssb.AppendCloseCurlyBracketLine();
-            }
-
-            ssb.AppendCloseCurlyBracketLine();
-            ssb.AppendCloseCurlyBracketLine();
-            return ssb.ToString();
+            engine.Execute(s);
         }
 
-        private string GetParamsObjectString(JavascriptItem item)
-        {
-            if (item.Params == null || item.Params.Count == 0)
-            {
-                return string.Empty;
-            }
+        engine.Execute(source);
             
-            return $", {string.Join(",", item.Params.Select(f => $"object @{f}"))}";
+        var ob = engine.Evaluate(file.ObjectToInterop).ToObject() as ExpandoObject;
+        List<JavascriptItem> items = new();
+            
+        VisitExpandoObject(ref items, file.ObjectToInterop,"", ob);
+        ssb.AppendLine("using System.Threading.Tasks;");
+        ssb.AppendLine("using Microsoft.JSInterop;");
+        ssb.AppendLine($"namespace {file.Namespace}");
+        ssb.AppendOpenCurlyBracketLine();
+        ssb.AppendLine($"public static class {file.ClassName}");
+        ssb.AppendOpenCurlyBracketLine();
+            
+        foreach (var item in items)
+        {
+            ssb.AppendLine($"public static string _{item.Name.Replace(".","_")} => \"{item.Name}\";");
+                
+            ssb.AppendLine($"public static async Task {item.DisplayName.Replace(".","_")}VoidAsync (this IJSRuntime JSRuntime {GetParamsObjectString(item)})");
+            ssb.AppendOpenCurlyBracketLine();
+            ssb.AppendLine(string.Format(invokeVoidString, item.Name, item.Params?.Count > 0 ? string.Join(",", item.Params.Select(e=>$"@{e}")) : "null" )  );
+            ssb.AppendCloseCurlyBracketLine();
+                
+            ssb.AppendLine($"public static async Task<T> {item.DisplayName.Replace(".","_")}Async<T> (this IJSRuntime JSRuntime {GetParamsObjectString(item)})");
+            ssb.AppendOpenCurlyBracketLine();
+            ssb.AppendLine(string.Format(invokeString, item.Name, string.Join(",", item.Params?.Count > 0 ? string.Join(",", item.Params.Select(e=>$"@{e}")) : "null") ));
+            ssb.AppendCloseCurlyBracketLine();
         }
 
-        static void VisitExpandoObject(ref List<JavascriptItem> Item, string ParentName, string DisplayName, ExpandoObject obj)
+        ssb.AppendCloseCurlyBracketLine();
+        ssb.AppendCloseCurlyBracketLine();
+        return ssb.ToString();
+    }
+
+    private string GetParamsObjectString(JavascriptItem item)
+    {
+        if (item.Params == null || item.Params.Count == 0)
         {
-            var item = obj as IDictionary<string, object>;
+            return string.Empty;
+        }
+            
+        return $", {string.Join(",", item.Params.Select(f => $"object @{f}"))}";
+    }
 
-            foreach (KeyValuePair<string, object> value in item)
+    static void VisitExpandoObject(ref List<JavascriptItem> Item, string ParentName, string DisplayName, ExpandoObject obj)
+    {
+        var item = obj as IDictionary<string, object>;
+
+        foreach (KeyValuePair<string, object> value in item)
+        {
+            if (value.Value is ExpandoObject expandoValue)
             {
-                if (value.Value is ExpandoObject expandoValue)
-                {
-                    VisitExpandoObject(ref Item, $"{ParentName}.{value.Key}", $"{DisplayName}.{value.Key}", expandoValue);
-                    continue;
-                }
-                else
-                {
-                    var itemType = value.Value.GetType();
+                VisitExpandoObject(ref Item, $"{ParentName}.{value.Key}", $"{DisplayName}.{value.Key}", expandoValue);
+                continue;
+            }
+            else
+            {
+                var itemType = value.Value.GetType();
 
-                    if (itemType.GetGenericTypeDefinition() == typeof(Func<,,>).GetGenericTypeDefinition() && itemType.GenericTypeArguments[0] == typeof(JsValue) && itemType.GenericTypeArguments[1]  == typeof(JsValue[]) && itemType.GenericTypeArguments[2] == typeof(JsValue))
-                    {
-                        var funcItem = (Func<JsValue, JsValue[], JsValue>)value.Value;
+                if (itemType.GetGenericTypeDefinition() == typeof(Func<,,>).GetGenericTypeDefinition() && itemType.GenericTypeArguments[0] == typeof(JsValue) && itemType.GenericTypeArguments[1]  == typeof(JsValue[]) && itemType.GenericTypeArguments[2] == typeof(JsValue))
+                {
+                    var funcItem = (Func<JsValue, JsValue[], JsValue>)value.Value;
                         
-                        var itemFound = new JavascriptItem()
-                        {
-                            Name = $"{ParentName}.{value.Key}",
-                            DisplayName = $"{DisplayName}.{value.Key}"
-                        };
+                    var itemFound = new JavascriptItem()
+                    {
+                        Name = $"{ParentName}.{value.Key}",
+                        DisplayName = $"{DisplayName}.{value.Key}"
+                    };
 
-                        if (itemFound.DisplayName.StartsWith("."))
-                        {
-                            itemFound.DisplayName = itemFound.DisplayName.Substring(1);
-                        }
-                            
-                        foreach (var functionDeclarationParam in (funcItem.Target as ScriptFunctionInstance).FunctionDeclaration.Params.OfType<Esprima.Ast.Identifier>())
-                        {
-                            itemFound.Params.Add(functionDeclarationParam.Name);
-                        }
-                        Item.Add(itemFound);
+                    if (itemFound.DisplayName.StartsWith("."))
+                    {
+                        itemFound.DisplayName = itemFound.DisplayName.Substring(1);
                     }
+                            
+                    foreach (var functionDeclarationParam in (funcItem.Target as ScriptFunctionInstance).FunctionDeclaration.Params.OfType<Esprima.Ast.Identifier>())
+                    {
+                        itemFound.Params.Add(functionDeclarationParam.Name);
+                    }
+                    Item.Add(itemFound);
                 }
             }
         }
+    }
         
         
-        private Settings LoadConfig(GeneratorExecutionContext context)
+    private Settings LoadConfig(GeneratorExecutionContext context)
+    {
+        var configFilePath = context.AdditionalFiles.FirstOrDefault(e => e.Path.EndsWith("BlazorInterop.json"));
+        if (configFilePath == null)
         {
-            var configFilePath = context.AdditionalFiles.FirstOrDefault(e => e.Path.EndsWith("BlazorInterop.json"));
-            if (configFilePath == null)
-            {
-                return null;
-            }
-            var jsonString = File.ReadAllText(configFilePath.Path);
-            var config = JsonSerializer.Deserialize<Settings>(jsonString) ?? new();
-            var configFileDirectory = Path.GetDirectoryName(configFilePath.Path);
-
-            if (string.IsNullOrWhiteSpace(config.Namespace))
-            {
-                if (context.AnalyzerConfigOptions.GlobalOptions.TryGetValue("build_property.rootnamespace", out var rootNamespace))
-                {
-                    config.Namespace = rootNamespace;
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(config.ClassName))
-            {
-                config.ClassName = "JSInterop";
-            }
-
-            if (string.IsNullOrWhiteSpace(config.OutputToFile))
-            {
-                config.OutputToFile = "JSInterop.cs";
-            }
-            
-            
-            var fullPath = Path.Combine(configFileDirectory, config.JavascriptFile);
-            config.JavascriptFile = Path.GetFullPath(fullPath);
-
-            if (!string.IsNullOrWhiteSpace(config.OutputToFile))
-            {
-                config.OutputToFile = Path.GetFullPath(Path.Combine(configFileDirectory, config.OutputToFile));
-            }
-
-
-            return config;
+            return null;
         }
+        var jsonString = File.ReadAllText(configFilePath.Path);
+        var config = JsonSerializer.Deserialize<Settings>(jsonString) ?? new();
+        var configFileDirectory = Path.GetDirectoryName(configFilePath.Path);
+
+        string defaultNamespace = "DefaultNamespace";
+        
+        if (context.AnalyzerConfigOptions.GlobalOptions.TryGetValue("build_property.rootnamespace", out var rootNamespace))
+        {
+            defaultNamespace = rootNamespace;
+        }
+
+        foreach (var settingsFile in config.Files)
+        {
+            if (string.IsNullOrWhiteSpace(settingsFile.ClassName))
+            {
+                settingsFile.ClassName = "JSInterop";
+            }
+
+            if (string.IsNullOrWhiteSpace(settingsFile.Namespace))
+            {
+                settingsFile.Namespace = defaultNamespace;
+            }
+            
+            if (string.IsNullOrWhiteSpace(settingsFile.Output))
+            {
+                settingsFile.Output = "JSInterop.cs";
+            }
+            
+            var fullPath = Path.Combine(configFileDirectory, settingsFile.Source);
+            settingsFile.Source = Path.GetFullPath(fullPath);
+
+            if (!string.IsNullOrWhiteSpace(settingsFile.Output))
+            {
+                settingsFile.Output = Path.GetFullPath(Path.Combine(configFileDirectory, settingsFile.Output));
+            }
+        }
+
+        return config;
     }
 }

@@ -132,7 +132,7 @@ namespace GoLive.Generator.BlazorInterop
                             itemFound.DisplayName = itemFound.DisplayName.Substring(1);
                         }
                             
-                        foreach (var functionDeclarationParam in (funcItem.Target as ScriptFunction).FunctionDeclaration.Params.OfType<Esprima.Ast.Identifier>())
+                        foreach (var functionDeclarationParam in (funcItem.Target as ScriptFunctionInstance).FunctionDeclaration.Params.OfType<Esprima.Ast.Identifier>())
                         {
                             itemFound.Params.Add(functionDeclarationParam.Name);
                         }

@@ -6,7 +6,7 @@ jobs:
   publish:
     env:
       Project: 'GoLive.Generator.BlazorInterop/GoLive.Generator.BlazorInterop.csproj'
-      BUILD_VER : '1.1'
+      BUILD_VER : '2.0'
     name: build, pack & publish
     runs-on: ubuntu-latest
     steps:

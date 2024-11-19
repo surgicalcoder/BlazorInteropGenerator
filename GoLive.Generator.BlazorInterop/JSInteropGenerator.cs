@@ -152,7 +152,7 @@ public class JSInteropGenerator : IIncrementalGenerator
                         itemFound.DisplayName = itemFound.DisplayName.Substring(1);
                     }
 
-                    foreach (var functionDeclarationParam in (funcItem.Target as ScriptFunctionInstance).FunctionDeclaration.Params.OfType<Identifier>())
+                    foreach (var functionDeclarationParam in (funcItem.Target as Jint.Native.Function.ScriptFunction).FunctionDeclaration.Params.OfType<Identifier>())
                     {
                         itemFound.Params.Add(functionDeclarationParam.Name);
                     }

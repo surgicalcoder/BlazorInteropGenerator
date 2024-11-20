@@ -186,11 +186,6 @@ public class JSInteropGenerator : IIncrementalGenerator
                 settingsFile.Namespace = defaultNamespace;
             }
 
-            if (string.IsNullOrWhiteSpace(settingsFile.Output))
-            {
-                settingsFile.Output = "JSInterop.cs";
-            }
-
             var fullPath = Path.Combine(configFileDirectory, settingsFile.Source);
             settingsFile.Source = Path.GetFullPath(fullPath);
 

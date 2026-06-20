@@ -6,7 +6,26 @@
       "Source": "wwwroot\\blazorinterop.js",
       "Namespace": "GoLive.Generator.BlazorInterop.Playground.Client",
       "ObjectToInterop": "window.blazorInterop",
-      "Init": ["window={}"]
+      "Init": [
+        "window={}"
+      ],
+      "MethodTypes": {
+        "showModal": {
+          "dialogId": "string"
+        },
+        "hideModal": {
+          "dialogId": "string"
+        },
+        "setPageTitle": {
+          "title": "string"
+        },
+        "datePicker": {
+          "id": "string"
+        },
+        "addNumbers": { "x": "number", "y": "number" },
+        "formatDate": { "day": "number", "month": "number", "year": "number" },
+        "greetUser": { "name": "string", "isFormal": "boolean" }
+      }
     }
   ],
   "InvokeVoidString": "await JSRuntime.InvokeVoidAsync(\"{0}\", {1});",

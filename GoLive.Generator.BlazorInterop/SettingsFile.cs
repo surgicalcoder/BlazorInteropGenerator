@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace GoLive.Generator.BlazorInterop;
 
 public class SettingsFile
@@ -9,4 +11,5 @@ public class SettingsFile
     public string ObjectToInterop { get; set; }
     public string SourceContents { get; set; }
     public string[] Init { get; set; }
+    public Dictionary<string, Dictionary<string, string>> MethodTypes { get; set; }
 }

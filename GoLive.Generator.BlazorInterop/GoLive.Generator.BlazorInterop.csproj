@@ -34,12 +34,12 @@
 	</PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Esprima" Version="3.0.5" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.11.0" PrivateAssets="All" />
-        <PackageReference Include="Jint" Version="3.1.6" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
-        <PackageReference Include="System.Buffers" Version="4.6.0" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
-        <PackageReference Include="System.Numerics.Vectors" Version="4.6.0" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
-        <PackageReference Include="ZCS.Utf8Json" Version="1.4.5" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
+        <PackageReference Include="Esprima" Version="3.0.6" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.3.0" PrivateAssets="All" />
+        <PackageReference Include="Jint" Version="4.10.0" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
+        <PackageReference Include="System.Buffers" Version="4.6.1" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
+        <PackageReference Include="System.Numerics.Vectors" Version="4.6.1" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
+        <PackageReference Include="ZCS.Utf8Json" Version="1.4.6" GeneratePathProperty="true" PrivateAssets="All" Pack="true" />
     </ItemGroup>
 
 

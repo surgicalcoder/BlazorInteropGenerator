@@ -2,6 +2,12 @@
 
 namespace GoLive.Generator.BlazorInterop;
 
+public class MethodParameter
+{
+    public string Name { get; set; }
+    public string Type { get; set; } = "object";
+}
+
 public class JavascriptItem
 {
     public JavascriptItem()
@@ -10,5 +16,5 @@ public class JavascriptItem
     }
     public string Name { get; set; }
     public string DisplayName { get; set; }
-    public List<string> Params { get; set; }
+    public List<MethodParameter> Params { get; set; }
 }

@@ -8,33 +8,7 @@
       "ObjectToInterop": "window.blazorInterop",
       "Init": [
         "window={}"
-      ],
-      "MethodTypes": {
-        "showModal": {
-          "dialogId": "string"
-        },
-        "hideModal": {
-          "dialogId": "string"
-        },
-        "setPageTitle": {
-          "title": "string"
-        },
-        "datePicker": {
-          "id": "string"
-        },
-        "addNumbers": { "x": "number", "y": "number" },
-        "formatDate": { "day": "number", "month": "number", "year": "number" },
-        "greetUser": { "name": "string", "isFormal": "boolean" }
-      },
-      "ReturnTypes": {
-        "showModal": "bool",
-        "hideModal": "bool",
-        "setPageTitle": "void",
-        "datePicker": "void",
-        "addNumbers": "int",
-        "formatDate": "datetime",
-        "greetUser": "string"
-      }
+      ]
     }
   ],
   "InvokeVoidString": "await JSRuntime.InvokeVoidAsync(\"{0}\", {1});",

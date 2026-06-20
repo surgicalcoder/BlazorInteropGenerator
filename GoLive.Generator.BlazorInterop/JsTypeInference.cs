@@ -386,6 +386,18 @@ public static class JsTypeInference
             if (methodName == "toString" || methodName == "toFixed" || methodName == "substring" || methodName == "slice" || methodName == "join")
                 return true;
         }
+        if (expr is ConditionalExpression cond)
+        {
+            return IsStringExpression(cond.Consequent) || IsStringExpression(cond.Alternate);
+        }
+        if (expr is BinaryExpression binary && binary.Operator == BinaryOperator.Plus)
+        {
+            return IsStringExpression(binary.Left) || IsStringExpression(binary.Right);
+        }
+        if (expr is LogicalExpression logical)
+        {
+            return IsStringExpression(logical.Left) || IsStringExpression(logical.Right);
+        }
         return false;
     }
 }

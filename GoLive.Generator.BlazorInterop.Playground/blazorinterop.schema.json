@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BlazorInterop.json",
+  "description": "Configuration for BlazorInteropGenerator source generator",
+  "type": "object",
+  "required": ["Files"],
+  "properties": {
+    "Files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["Source", "ObjectToInterop"],
+        "properties": {
+          "Source": {
+            "type": "string",
+            "description": "Path to the JavaScript file (relative to config location)"
+          },
+          "ObjectToInterop": {
+            "type": "string",
+            "description": "JavaScript expression to the object to generate interop for (e.g., 'window.blazorInterop')"
+          },
+          "Output": {
+            "type": "string",
+            "description": "Output file path (relative to config). If omitted, uses AddSource instead"
+          },
+          "ClassName": {
+            "type": "string",
+            "default": "JSInterop",
+            "description": "Name of the generated C# static class"
+          },
+          "Namespace": {
+            "type": "string",
+            "description": "C# namespace for the generated class. Defaults to the project's root namespace"
+          },
+          "Init": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "JavaScript statements to execute before evaluating the source (e.g., 'window={}')"
+          }
+        }
+      }
+    },
+    "InvokeVoidString": {
+      "type": "string",
+      "default": "await JSRuntime.InvokeVoidAsync(\"{0}\", {1});",
+      "description": "Format string for void invoke calls. {0} = method name, {1} = args"
+    },
+    "InvokeString": {
+      "type": "string",
+      "default": "return await JSRuntime.InvokeAsync<T>(\"{0}\",{1});",
+      "description": "Format string for typed invoke calls. {0} = method name, {1} = args"
+    }
+  }
+}

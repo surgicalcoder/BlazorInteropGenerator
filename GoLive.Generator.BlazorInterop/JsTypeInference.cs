@@ -4,12 +4,14 @@ using System.Text.RegularExpressions;
 using Esprima;
 using Esprima.Ast;
 
-namespace GoLive.Generator.BlazorInterop;
-
-public class InferredTypeInfo
+namespace GoLive.Generator.BlazorInterop;    public class InferredTypeInfo
 {
     public Dictionary<string, string> ParamTypes { get; set; } = new Dictionary<string, string>();
     public string ReturnType { get; set; }
+    public string Description { get; set; }
+    public Dictionary<string, string> ParamDescriptions { get; set; } = new Dictionary<string, string>();
+    public string ReturnDescription { get; set; }
+    public HashSet<string> CallbackParams { get; set; } = new HashSet<string>();
 }
 
 public static class JsTypeInference
@@ -78,7 +80,9 @@ public static class JsTypeInference
 
             var fullName = string.IsNullOrEmpty(prefix) ? propName : $"{prefix}.{propName}";
 
-            if (prop.Value is FunctionExpression funcExpr)
+            // #3: Support arrow functions alongside regular functions
+            // #11: Support async functions (both FunctionExpression and ArrowFunctionExpression have Async property)
+            if (prop.Value is IFunction func)
             {
                 var info = new InferredTypeInfo();
 
@@ -88,17 +92,33 @@ public static class JsTypeInference
                 // Extract param types from JSDoc
                 if (!string.IsNullOrEmpty(jsDoc))
                 {
-                    info.ParamTypes = ExtractParamTypesFromJSDoc(jsDoc);
-                    info.ReturnType = ExtractReturnTypeFromJSDoc(jsDoc);
+                    var (paramTypes, paramDescs, summary) = ExtractParamTypesFromJSDoc(jsDoc);
+                    info.ParamTypes = paramTypes;
+                    info.ParamDescriptions = paramDescs;
+                    info.Description = summary;
+                    var (returnType, returnDesc) = ExtractReturnTypeFromJSDoc(jsDoc);
+                    info.ReturnType = returnType;
+                    info.ReturnDescription = returnDesc;
                 }
 
-                // Extract param names from AST (replaces regex)
-                ExtractParamNames(funcExpr, info);
+                // Extract param names from AST
+                ExtractParamNames(func.Params, info);
 
                 // Infer return type from ReturnStatement if not set by JSDoc
                 if (string.IsNullOrEmpty(info.ReturnType))
                 {
-                    info.ReturnType = InferReturnTypeFromBody(funcExpr.Body);
+                    if (func.Body is BlockStatement block)
+                        info.ReturnType = InferReturnTypeFromBody(block);
+                    else if (func.Body is Expression bodyExpr)
+                        info.ReturnType = InferFromExpression(bodyExpr);
+                    else
+                        info.ReturnType = "void";
+                }
+
+                // #10: Detect callback params - params that are called as functions in the body
+                if (func.Body is BlockStatement bodyBlock)
+                {
+                    DetectCallbackParams(bodyBlock, info);
                 }
 
                 result[fullName] = info;
@@ -142,30 +162,76 @@ public static class JsTypeInference
         return closest;
     }
 
-    private static Dictionary<string, string> ExtractParamTypesFromJSDoc(string jsDoc)
+    private static (Dictionary<string, string> types, Dictionary<string, string> descriptions, string summary) ExtractParamTypesFromJSDoc(string jsDoc)
     {
-        var result = new Dictionary<string, string>();
-        var regex = new Regex(@"@param\s+\{([^}]+)\}\s+([a-zA-Z0-9_]+)");
-        var matches = regex.Matches(jsDoc);
+        var types = new Dictionary<string, string>();
+        var descriptions = new Dictionary<string, string>();
+        var cleaned = CleanJSDocComment(jsDoc);
+        var regex = new Regex(@"@param\s+\{([^}]+)\}\s+([a-zA-Z0-9_]+)(?:\s*-\s*(.+))?");
+        var matches = regex.Matches(cleaned);
         foreach (Match match in matches)
         {
             if (match.Groups[1].Success && match.Groups[2].Success)
             {
-                result[match.Groups[2].Value] = MapJSDocType(match.Groups[1].Value);
+                types[match.Groups[2].Value] = MapJSDocType(match.Groups[1].Value);
+                if (match.Groups[3].Success)
+                    descriptions[match.Groups[2].Value] = match.Groups[3].Value.Trim();
             }
         }
-        return result;
+        var summary = ExtractSummary(jsDoc);
+        return (types, descriptions, summary);
     }
 
-    private static string ExtractReturnTypeFromJSDoc(string jsDoc)
+    private static string ExtractSummary(string jsDoc)
     {
-        var regex = new Regex(@"@returns?\s+\{([^}]+)\}");
-        var match = regex.Match(jsDoc);
+        if (string.IsNullOrWhiteSpace(jsDoc))
+            return null;
+
+        // Strip leading * from each line and clean up
+        var cleaned = CleanJSDocComment(jsDoc);
+
+        // Get text before first @ tag
+        var regex = new Regex(@"^([\s\S]*?)(?=\s*@\w)");
+        var match = regex.Match(cleaned);
+        if (match.Success)
+        {
+            var summary = match.Groups[1].Value.Trim();
+            summary = Regex.Replace(summary, @"\s*\r?\n\s*", " ").Trim();
+            return string.IsNullOrWhiteSpace(summary) ? null : summary;
+        }
+
+        return null;
+    }
+
+    private static string CleanJSDocComment(string jsDoc)
+    {
+        // Remove leading * from each line and trim
+        var lines = jsDoc.Split(new[] { '\r', '\n' }, StringSplitOptions.None);
+        var cleaned = new System.Text.StringBuilder();
+        foreach (var line in lines)
+        {
+            var trimmed = line.TrimStart();
+            if (trimmed.StartsWith("* "))
+                trimmed = trimmed.Substring(2);
+            else if (trimmed == "*")
+                trimmed = "";
+            cleaned.AppendLine(trimmed);
+        }
+        return cleaned.ToString().Trim();
+    }
+
+    private static (string type, string description) ExtractReturnTypeFromJSDoc(string jsDoc)
+    {
+        var cleaned = CleanJSDocComment(jsDoc);
+        var regex = new Regex(@"@returns?\s+\{([^}]+)\}(?:\s*-?\s*(.+))?");
+        var match = regex.Match(cleaned);
         if (match.Success && match.Groups[1].Success)
         {
-            return MapJSDocType(match.Groups[1].Value);
+            var type = MapJSDocType(match.Groups[1].Value);
+            var desc = match.Groups[2].Success ? match.Groups[2].Value.Trim() : null;
+            return (type, desc);
         }
-        return null;
+        return (null, null);
     }
 
     private static string MapJSDocType(string jsDocType)
@@ -185,9 +251,9 @@ public static class JsTypeInference
         };
     }
 
-    private static void ExtractParamNames(FunctionExpression funcExpr, InferredTypeInfo info)
+    private static void ExtractParamNames(NodeList<Node> funcParams, InferredTypeInfo info)
     {
-        foreach (var param in funcExpr.Params)
+        foreach (var param in funcParams)
         {
             string paramName = null;
             if (param is Identifier id)
@@ -313,10 +379,13 @@ public static class JsTypeInference
                     if (callId.Name == "Date")
                         return "datetime";
                 }
-                if (callExpr.Callee is StaticMemberExpression member)
+                // #5: Date.now() detection
+                if (callExpr.Callee is StaticMemberExpression callMember)
                 {
-                    var methodName = (member.Property as Identifier)?.Name;
-                    if (methodName == "toString" || methodName == "toFixed" || methodName == "substring" || methodName == "slice")
+                    var callMethodName = (callMember.Property as Identifier)?.Name;
+                    if (callMember.Object is Identifier objId && objId.Name == "Date" && callMethodName == "now")
+                        return "number";
+                    if (callMethodName == "toString" || callMethodName == "toFixed" || callMethodName == "substring" || callMethodName == "slice")
                         return "string";
                 }
                 return "object";
@@ -372,6 +441,45 @@ public static class JsTypeInference
         }
 
         return "object";
+    }
+
+    private static void DetectCallbackParams(BlockStatement body, InferredTypeInfo info)
+    {
+        // Collect all param names
+        var paramNames = new HashSet<string>(info.ParamTypes.Keys);
+        if (paramNames.Count == 0) return;
+
+        // Walk the body looking for CallExpression where callee is an Identifier that matches a param
+        DetectCallbackUsage(body.Body, paramNames, info.CallbackParams);
+    }
+
+    private static void DetectCallbackUsage(IEnumerable<StatementListItem> statements, HashSet<string> paramNames, HashSet<string> callbackParams)
+    {
+        foreach (var stmt in statements)
+        {
+            WalkNodeForCallbacks(stmt, paramNames, callbackParams);
+        }
+    }
+
+    private static void WalkNodeForCallbacks(Esprima.Ast.Node node, HashSet<string> paramNames, HashSet<string> callbackParams)
+    {
+        // Stop at nested function boundaries to avoid false positives
+        if (node is FunctionExpression || node is ArrowFunctionExpression)
+            return;
+
+        if (node is CallExpression callExpr)
+        {
+            if (callExpr.Callee is Identifier callId && paramNames.Contains(callId.Name))
+            {
+                callbackParams.Add(callId.Name);
+            }
+        }
+
+        // Recurse into child nodes
+        foreach (var child in node.ChildNodes)
+        {
+            WalkNodeForCallbacks(child, paramNames, callbackParams);
+        }
     }
 
     private static bool IsStringExpression(Expression expr)

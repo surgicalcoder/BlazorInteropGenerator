@@ -40,9 +40,26 @@ public class JSInteropGenerator : IIncrementalGenerator
         {
             if (config == null) return;
 
+            // #2: Report config load errors via diagnostics
+            if (!string.IsNullOrEmpty(config.ConfigError))
+            {
+                spc.ReportDiagnostic(Diagnostic.Create(ConfigError, Location.None, config.ConfigPath ?? "BlazorInterop.json", config.ConfigError));
+                return;
+            }
+
             foreach (var settingsFile in config.Files)
             {
-                if (string.IsNullOrWhiteSpace(settingsFile.SourceContents)) continue;
+                // #9: Config validation
+                if (string.IsNullOrWhiteSpace(settingsFile.SourceContents))
+                {
+                    spc.ReportDiagnostic(Diagnostic.Create(ConfigError, Location.None, settingsFile.Source ?? "BlazorInterop.json", "Source file is empty or does not exist"));
+                    continue;
+                }
+                if (string.IsNullOrWhiteSpace(settingsFile.ObjectToInterop))
+                {
+                    spc.ReportDiagnostic(Diagnostic.Create(ConfigError, Location.None, settingsFile.Source ?? "BlazorInterop.json", "ObjectToInterop is required"));
+                    continue;
+                }
 
                 var source = GenerateSource(spc, config.InvokeString, config.InvokeVoidString, settingsFile);
 
@@ -134,7 +151,11 @@ public class JSInteropGenerator : IIncrementalGenerator
                 // Apply param types
                 foreach (var param in item.Params)
                 {
-                    if (info.ParamTypes.TryGetValue(param.Name, out var jsType))
+                    if (info.CallbackParams != null && info.CallbackParams.Contains(param.Name))
+                    {
+                        param.Type = "Action";
+                    }
+                    else if (info.ParamTypes.TryGetValue(param.Name, out var jsType))
                     {
                         param.Type = MapJsTypeToCsType(jsType);
                     }
@@ -159,15 +180,16 @@ public class JSInteropGenerator : IIncrementalGenerator
         if (keys.Contains(displayName))
             return displayName;
 
-        // Match by last segment (for nested objects like "blazorInterop.showModal" matching "showModal")
+        // Match by last segment, but only if unambiguous
         var lastSegment = displayName.Contains('.') ? displayName.Substring(displayName.LastIndexOf('.') + 1) : displayName;
-        var match = keys.FirstOrDefault(k =>
+        var matches = keys.Where(k =>
         {
             var kLast = k.Contains('.') ? k.Substring(k.LastIndexOf('.') + 1) : k;
             return kLast == lastSegment;
-        });
+        }).ToList();
 
-        return match;
+        // Return only if exactly one match (unambiguous)
+        return matches.Count == 1 ? matches[0] : null;
     }
 
     private void EmitUsings(SourceStringBuilder ssb, SettingsFile file)
@@ -184,10 +206,41 @@ public class JSInteropGenerator : IIncrementalGenerator
 
     private void EmitClass(SourceStringBuilder ssb, SettingsFile file, List<JavascriptItem> items, string invokeString, string invokeVoidString)
     {
-        foreach (var item in items)
+        // #7: Group items by their parent path for nested class generation
+        var rootItems = items.Where(i => !i.DisplayName.Contains('.')).ToList();
+        var nestedGroups = items.Where(i => i.DisplayName.Contains('.'))
+            .GroupBy(i => i.DisplayName.Substring(0, i.DisplayName.LastIndexOf('.')))
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        // Emit root-level items
+        foreach (var item in rootItems)
         {
             ssb.AppendLine($"public static string _{item.Name.Replace(".", "_")} => \"{item.Name}\";");
             EmitItemMethods(ssb, item, invokeString, invokeVoidString);
+        }
+
+        // Emit nested classes
+        foreach (var group in nestedGroups.OrderBy(g => g.Key))
+        {
+            var className = group.Key.Replace(".", "_");
+            ssb.AppendLine($"public static class {className}");
+            ssb.AppendOpenCurlyBracketLine();
+
+            foreach (var item in group.Value)
+            {
+                var shortName = item.DisplayName.Substring(item.DisplayName.LastIndexOf('.') + 1);
+                var shortItem = new JavascriptItem
+                {
+                    Name = item.Name,
+                    DisplayName = shortName,
+                    ReturnType = item.ReturnType,
+                    Params = item.Params
+                };
+                ssb.AppendLine($"public static string _{item.Name.Replace(".", "_")} => \"{item.Name}\";");
+                EmitItemMethods(ssb, shortItem, invokeString, invokeVoidString);
+            }
+
+            ssb.AppendCloseCurlyBracketLine();
         }
 
         ssb.AppendCloseCurlyBracketLine();
@@ -318,7 +371,7 @@ public class JSInteropGenerator : IIncrementalGenerator
         }
         catch (Exception ex)
         {
-            return null;
+            return new Settings { Files = new List<SettingsFile>(), InvokeString = "", InvokeVoidString = "", ConfigError = ex.Message, ConfigPath = configPath };
         }
     }
 }

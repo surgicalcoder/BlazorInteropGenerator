@@ -12,6 +12,10 @@ public class Settings : IEquatable<Settings>
 
     public string InvokeString { get; set; }
 
+    public string ConfigError { get; set; }
+
+    public string ConfigPath { get; set; }
+
     public bool Equals(Settings other)
     {
         if (other is null) return false;

@@ -12,4 +12,5 @@ public class SettingsFile
     public string SourceContents { get; set; }
     public string[] Init { get; set; }
     public Dictionary<string, Dictionary<string, string>> MethodTypes { get; set; }
+    public Dictionary<string, string> ReturnTypes { get; set; }
 }

@@ -20,7 +20,7 @@ window.blazorInterop = {
         return x + y;
     },
     formatDate: function(day, month, year) {
-        return day + '/' + month + '/' + year;
+        return new Date(year, month - 1, day);
     },
     greetUser: function(name, isFormal) {
         return (isFormal ? "Dear " : "Hello ") + name;

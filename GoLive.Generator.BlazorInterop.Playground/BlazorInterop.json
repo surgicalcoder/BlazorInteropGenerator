@@ -25,6 +25,15 @@
         "addNumbers": { "x": "number", "y": "number" },
         "formatDate": { "day": "number", "month": "number", "year": "number" },
         "greetUser": { "name": "string", "isFormal": "boolean" }
+      },
+      "ReturnTypes": {
+        "showModal": "bool",
+        "hideModal": "bool",
+        "setPageTitle": "void",
+        "datePicker": "void",
+        "addNumbers": "int",
+        "formatDate": "datetime",
+        "greetUser": "string"
       }
     }
   ],

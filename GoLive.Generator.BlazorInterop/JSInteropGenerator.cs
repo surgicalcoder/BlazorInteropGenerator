@@ -80,6 +80,15 @@ public class JSInteropGenerator : IIncrementalGenerator
             }
         }
 
+        if (file.ReturnTypes != null)
+        {
+            foreach (var item in items)
+            {
+                if (file.ReturnTypes.TryGetValue(item.DisplayName, out var jsRetType))
+                    item.ReturnType = MapJsTypeToCsType(jsRetType);
+            }
+        }
+
         ssb.AppendLine("using System;");
         ssb.AppendLine("using System.Threading;");
         ssb.AppendLine("using System.Threading.Tasks;");
@@ -96,6 +105,8 @@ public class JSInteropGenerator : IIncrementalGenerator
             var hasParams = item.Params?.Count > 0;
             var paramsStr = hasParams ? string.Join(",", item.Params.Select(e => $"@{e.Name}")) : "null";
             var paramsDecl = GetParamsObjectString(item);
+            var isVoidReturn = string.Equals(item.ReturnType, "void", StringComparison.OrdinalIgnoreCase);
+            var hasTypedReturn = !string.IsNullOrEmpty(item.ReturnType) && !isVoidReturn;
 
             ssb.AppendLine($"public static async Task {item.DisplayName.Replace(".", "_")}VoidAsync (this IJSRuntime JSRuntime {paramsDecl})");
             ssb.AppendOpenCurlyBracketLine();
@@ -107,15 +118,33 @@ public class JSInteropGenerator : IIncrementalGenerator
             ssb.AppendLine(string.Format(invokeVoidString, item.Name, hasParams ? $"cancellationToken, {paramsStr}" : "cancellationToken"));
             ssb.AppendCloseCurlyBracketLine();
 
-            ssb.AppendLine($"public static async Task<T> {item.DisplayName.Replace(".", "_")}Async<T> (this IJSRuntime JSRuntime {paramsDecl})");
-            ssb.AppendOpenCurlyBracketLine();
-            ssb.AppendLine(string.Format(invokeString, item.Name, paramsStr));
-            ssb.AppendCloseCurlyBracketLine();
+            if (!isVoidReturn)
+            {
+                ssb.AppendLine($"public static async Task<T> {item.DisplayName.Replace(".", "_")}Async<T> (this IJSRuntime JSRuntime {paramsDecl})");
+                ssb.AppendOpenCurlyBracketLine();
+                ssb.AppendLine(string.Format(invokeString, item.Name, paramsStr));
+                ssb.AppendCloseCurlyBracketLine();
 
-            ssb.AppendLine($"public static async Task<T> {item.DisplayName.Replace(".", "_")}Async<T> (this IJSRuntime JSRuntime {paramsDecl}{GetCTCParamString(item)})");
-            ssb.AppendOpenCurlyBracketLine();
-            ssb.AppendLine(string.Format(invokeString, item.Name, hasParams ? $"cancellationToken, {paramsStr}" : "cancellationToken"));
-            ssb.AppendCloseCurlyBracketLine();
+                ssb.AppendLine($"public static async Task<T> {item.DisplayName.Replace(".", "_")}Async<T> (this IJSRuntime JSRuntime {paramsDecl}{GetCTCParamString(item)})");
+                ssb.AppendOpenCurlyBracketLine();
+                ssb.AppendLine(string.Format(invokeString, item.Name, hasParams ? $"cancellationToken, {paramsStr}" : "cancellationToken"));
+                ssb.AppendCloseCurlyBracketLine();
+            }
+
+            if (hasTypedReturn)
+            {
+                var typedInvokeString = invokeString.Replace("<T>", $"<{item.ReturnType}>");
+
+                ssb.AppendLine($"public static async Task<{item.ReturnType}> {item.DisplayName.Replace(".", "_")}Async (this IJSRuntime JSRuntime {paramsDecl})");
+                ssb.AppendOpenCurlyBracketLine();
+                ssb.AppendLine(string.Format(typedInvokeString, item.Name, paramsStr));
+                ssb.AppendCloseCurlyBracketLine();
+
+                ssb.AppendLine($"public static async Task<{item.ReturnType}> {item.DisplayName.Replace(".", "_")}Async (this IJSRuntime JSRuntime {paramsDecl}{GetCTCParamString(item)})");
+                ssb.AppendOpenCurlyBracketLine();
+                ssb.AppendLine(string.Format(typedInvokeString, item.Name, hasParams ? $"cancellationToken, {paramsStr}" : "cancellationToken"));
+                ssb.AppendCloseCurlyBracketLine();
+            }
         }
 
         ssb.AppendCloseCurlyBracketLine();

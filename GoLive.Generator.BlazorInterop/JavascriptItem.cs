@@ -16,5 +16,6 @@ public class JavascriptItem
     }
     public string Name { get; set; }
     public string DisplayName { get; set; }
+    public string ReturnType { get; set; }
     public List<MethodParameter> Params { get; set; }
 }
